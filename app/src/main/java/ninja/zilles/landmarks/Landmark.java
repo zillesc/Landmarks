@@ -1,24 +1,13 @@
 package ninja.zilles.landmarks;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  * Created by zilles on 11/1/16.
  */
 
-public class Landmark implements Comparable<Landmark> {
-    public static final String example = "{\n"+
-            "        \"type_of_landmark\": \"Building\",\n"+
-            "        \"address\": \"346-352 N Neil St\",\n"+
-            "        \"notes\": \"also on National Register Historic Places\",\n"+
-            "        \"ownership\": \"Museum Group\",\n"+
-            "        \"date_designated\": \"1998-03-17T00:00:00\",\n"+
-            "        \"landmark_name\": \"Orpheum Theater\",\n"+
-            "        \"location\": {\n"+
-            "            \"latitude\": \"40.1194838838\",\n"+
-            "            \"human_address\": \"{\\\"address\\\":\\\"346-352 N Neil St\\\",\\\"city\\\":\\\"\\\",\\\"state\\\":\\\"\\\",\\\"zip\\\":\\\"\\\"}\",\n"+
-            "            \"needs_recoding\": false,\n"+
-            "            \"longitude\": \"-88.2425214665\"\n"+
-            "        }\n"+
-            "    }";
+public class Landmark implements Comparable<Landmark>,Parcelable {
 
     private String type_of_landmark;
     private String address;
@@ -58,13 +47,15 @@ public class Landmark implements Comparable<Landmark> {
 
     @Override
     public int compareTo(Landmark another) {
-        if (another instanceof Landmark) {
-            return landmark_name.compareTo(((Landmark)another).landmark_name);
-        }
-        return 0;
+        return landmark_name.compareTo(another.landmark_name);
+
+//        if (another instanceof Landmark) {
+//            return landmark_name.compareTo(((Landmark)another).landmark_name);
+//        }
+//        return 0;
     }
 
-    public class Location {
+    public static class Location implements Parcelable {
         private String latitude;
         private String longitude;
         private String human_address;
@@ -85,6 +76,81 @@ public class Landmark implements Comparable<Landmark> {
         public boolean needsRecording() {
             return needs_recording;
         }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeString(this.latitude);
+            dest.writeString(this.longitude);
+            dest.writeString(this.human_address);
+            dest.writeByte(this.needs_recording ? (byte) 1 : (byte) 0);
+        }
+
+        public Location() {
+        }
+
+        protected Location(Parcel in) {
+            this.latitude = in.readString();
+            this.longitude = in.readString();
+            this.human_address = in.readString();
+            this.needs_recording = in.readByte() != 0;
+        }
+
+        public static final Parcelable.Creator<Location> CREATOR = new Parcelable.Creator<Location>() {
+            @Override
+            public Location createFromParcel(Parcel source) {
+                return new Location(source);
+            }
+
+            @Override
+            public Location[] newArray(int size) {
+                return new Location[size];
+            }
+        };
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.type_of_landmark);
+        dest.writeString(this.address);
+        dest.writeString(this.notes);
+        dest.writeString(this.ownership);
+        dest.writeString(this.date_designated);
+        dest.writeString(this.landmark_name);
+        dest.writeParcelable(this.location, flags);
+    }
+
+    public Landmark() {
+    }
+
+    protected Landmark(Parcel in) {
+        this.type_of_landmark = in.readString();
+        this.address = in.readString();
+        this.notes = in.readString();
+        this.ownership = in.readString();
+        this.date_designated = in.readString();
+        this.landmark_name = in.readString();
+        this.location = in.readParcelable(Location.class.getClassLoader());
+    }
+
+    public static final Parcelable.Creator<Landmark> CREATOR = new Parcelable.Creator<Landmark>() {
+        @Override
+        public Landmark createFromParcel(Parcel source) {
+            return new Landmark(source);
+        }
+
+        @Override
+        public Landmark[] newArray(int size) {
+            return new Landmark[size];
+        }
+    };
 }

@@ -22,40 +22,39 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Handler;
 
 public class MainActivity extends AppCompatActivity {
 
-    List<Landmark> landmarkList = new ArrayList<>();
-    List<String> landmarkNames = new ArrayList<>();
-    private ArrayAdapter<String> listStringAdapter;
     private ListView listView;
+    private LandmarkAdapter mLandmarkAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Attach the custom ArrayAdapter to our ListView
         listView = (ListView) findViewById(R.id.listView);
-        listStringAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, landmarkNames);
-        listView.setAdapter(listStringAdapter);
+        mLandmarkAdapter = new LandmarkAdapter(this, R.layout.listitem);
+        listView.setAdapter(mLandmarkAdapter);
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        // On long click listener launches a map at the target latitude/longitude
+        // trying to label the desired location based on the name provided.
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Landmark landmark = landmarkList.get(position);
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                Landmark landmark = mLandmarkAdapter.getItem(position);
                 Landmark.Location location = landmark.getLocation();
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
 
-                // Create a Uri from an intent string. Use the result to create an Intent.
-//                Uri gmmIntentUri = Uri.parse("google.streetview:cbll=" + latitude + "," + longitude);
-//                Uri gmmIntentUri = Uri.parse("geo:" + latitude + "," + longitude + "?q=" + landmark.getLandmarkName());
-//                Uri gmmIntentUri = Uri.parse("geo:" + latitude + "," + longitude);
-                Uri gmmIntentUri = Uri.parse("geo:" + latitude + "," + longitude + "?q=" + latitude + "," + longitude +
-                        "(" + landmark.getLandmarkName() + ")");
-
+                String uriString = String.format("geo:%s,%s?q=%s,%s(%s)",
+                        latitude, longitude,
+                        latitude, longitude, landmark.getLandmarkName());
+                Uri gmmIntentUri = Uri.parse(uriString);
 
                 // Create an Intent from gmmIntentUri. Set the action to ACTION_VIEW
                 Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
@@ -64,6 +63,20 @@ public class MainActivity extends AppCompatActivity {
 
                 // Attempt to start an activity that can handle the Intent
                 startActivity(mapIntent);
+
+                return true;
+            }
+        });
+
+        // Normal clicks open a detail view; we pass a parcelable Landmark
+        // to the detail page.
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Landmark landmark = mLandmarkAdapter.getItem(position);
+                Intent detailIntent = new Intent(parent.getContext(),
+                        DetailActivity.class).putExtra("landmark", landmark);
+                startActivity(detailIntent);
             }
         });
 
@@ -84,12 +97,9 @@ public class MainActivity extends AppCompatActivity {
             String forecastJsonStr = null;
 
             try {
-                // Construct the URL for the OpenWeatherMap query
-                // Possible parameters are avaiable at OWM's forecast API page, at
-                // http://openweathermap.org/API#forecast
                 URL url = new URL("https://data.illinois.gov/resource/pwzm-4yz8.json");
 
-                // Create the request to OpenWeatherMap, and open the connection
+                // Create the request and open the connection
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
                 urlConnection.connect();
@@ -124,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 return landmarks;
             } catch (IOException e) {
                 Log.e("FetchData", "Error ", e);
-                // If the code didn't successfully get the weather data, there's no point in attemping
+                // If the code didn't successfully get the data, there's no point in attemping
                 // to parse it.
                 return null;
             } finally {
@@ -144,13 +154,13 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Landmark[] landmarks) {
             if (landmarks != null) {
-                for (Landmark landmark : landmarks) {
-                    landmarkList.add(landmark);
-                    landmarkNames.add(landmark.getLandmarkName());
-                }
-                Collections.sort(landmarkNames);
-                Collections.sort(landmarkList);
-                listStringAdapter.notifyDataSetChanged();
+                mLandmarkAdapter.addAll(landmarks);
+                mLandmarkAdapter.sort(new Comparator<Landmark>() {
+                    @Override
+                    public int compare(Landmark lhs, Landmark rhs) {
+                        return lhs.getLandmarkName().compareTo(rhs.getLandmarkName());
+                    }
+                });
             }
         }
     }

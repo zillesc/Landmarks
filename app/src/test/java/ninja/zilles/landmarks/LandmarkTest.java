@@ -11,13 +11,27 @@ import static org.junit.Assert.*;
  * Created by zilles on 11/1/16.
  */
 public class LandmarkTest {
+    public static final String example = "{\n"+
+            "        \"type_of_landmark\": \"Building\",\n"+
+            "        \"address\": \"346-352 N Neil St\",\n"+
+            "        \"notes\": \"also on National Register Historic Places\",\n"+
+            "        \"ownership\": \"Museum Group\",\n"+
+            "        \"date_designated\": \"1998-03-17T00:00:00\",\n"+
+            "        \"landmark_name\": \"Orpheum Theater\",\n"+
+            "        \"location\": {\n"+
+            "            \"latitude\": \"40.1194838838\",\n"+
+            "            \"human_address\": \"{\\\"address\\\":\\\"346-352 N Neil St\\\",\\\"city\\\":\\\"\\\",\\\"state\\\":\\\"\\\",\\\"zip\\\":\\\"\\\"}\",\n"+
+            "            \"needs_recoding\": false,\n"+
+            "            \"longitude\": \"-88.2425214665\"\n"+
+            "        }\n"+
+            "    }";
     Landmark m_landmark;
 
     @Before
     public void setUp() throws Exception {
 //        System.out.println(Landmark.example);
         Gson gson = new Gson();
-        m_landmark = (Landmark) gson.fromJson(Landmark.example, Landmark.class);
+        m_landmark = (Landmark) gson.fromJson(this.example, Landmark.class);
 
     }
 
@@ -59,5 +73,7 @@ public class LandmarkTest {
         assertEquals(location.getLongitude(), -88.2425214665, .1);
         assertFalse(location.needsRecording());
     }
+
+    
 
 }
